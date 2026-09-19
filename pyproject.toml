@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "datefix"
+version = "0.1.0"
+description = "Preview, shift and undo file and media capture dates on Windows and Linux"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = []
+
+[project.optional-dependencies]
+desktop = ["PySide6-Essentials>=6.8,<7"]
+dev = ["pytest>=8", "Pillow>=10", "pyinstaller>=6"]
+
+[project.scripts]
+datefix = "datefix.cli:main"
+
+[project.gui-scripts]
+datefix-gui = "datefix.gui:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
