@@ -171,7 +171,7 @@ def test_cli_runs_without_site_packages_or_qt(media):
 
 def test_doctor_returns_machine_readable_capabilities_without_qt():
     output = json_output(run_cli("doctor", no_site=True))
-    assert output["version"] == "0.1.0"
+    assert output["version"] == "0.2.0"
     assert output["platform"] == sys.platform
     assert output["file_modified"] is True
     assert output["file_created"] is (os.name == "nt")

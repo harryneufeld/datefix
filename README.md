@@ -1,6 +1,6 @@
 # DateFix
 
-DateFix 0.1.0 adjusts file dates and existing photo/video capture dates. Its Python core and command-line interface are independent of the optional desktop interface, so the same operations can run on Windows and Linux. Everything runs locally.
+DateFix adjusts file dates and existing photo/video capture dates. Its Python core and command-line interface are independent of the optional desktop interface, so the same operations can run on Windows and Linux. Everything runs locally.
 
 ## Start on Windows
 

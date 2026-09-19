@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 import sys
 
+from . import __version__
 from .core import Offset, Request, apply, default_journal_dir, discover, preview, undo
 from .metadata import find_exiftool
 
@@ -18,7 +19,7 @@ def _parser() -> argparse.ArgumentParser:
         prog="datefix", description="Preview, adjust and undo file and capture dates.",
         epilog="Date changes are previews by default. Add --apply to commit and record undo history.",
     )
-    parser.add_argument("--version", action="version", version="DateFix 0.1.0")
+    parser.add_argument("--version", action="version", version=f"DateFix {__version__}")
     commands = parser.add_subparsers(dest="command")
     commands.add_parser("gui", help="Open the desktop interface")
     commands.add_parser("doctor", help="Show platform and metadata engine availability")
@@ -104,7 +105,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "doctor":
             import os
             _print_json({
-                "version": "0.1.0", "python": sys.version.split()[0], "platform": sys.platform,
+                "version": __version__, "python": sys.version.split()[0], "platform": sys.platform,
                 "file_modified": True, "file_created": os.name == "nt", "exiftool": find_exiftool(),
                 "history": str(default_journal_dir()),
             })

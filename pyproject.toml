@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "datefix"
-version = "0.1.0"
+version = "0.2.0"
 description = "Preview, shift and undo file and media capture dates on Windows and Linux"
 readme = "README.md"
 requires-python = ">=3.10"
