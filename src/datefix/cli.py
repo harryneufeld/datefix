@@ -94,8 +94,12 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "gui":
             try:
                 from .gui import main as gui_main
+            except ModuleNotFoundError as exc:
+                if exc.name and exc.name.startswith("PySide6"):
+                    raise RuntimeError("Desktop interface needs the desktop extra: pip install '.[desktop]'") from exc
+                raise RuntimeError(f"Desktop dependency could not be loaded: {exc}") from exc
             except ImportError as exc:
-                raise RuntimeError("Desktop interface needs the desktop extra: pip install '.[desktop]'") from exc
+                raise RuntimeError(f"Desktop libraries could not be loaded: {exc}") from exc
             return gui_main()
         if args.command == "doctor":
             import os

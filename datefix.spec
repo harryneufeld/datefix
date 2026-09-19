@@ -1,6 +1,14 @@
 # Build both launchers with one shared Python/Qt runtime.
 from importlib.metadata import distribution
 from pathlib import Path
+import os
+import sys
+
+# Do not resolve Qt's Windows ICU/API-set dependencies from unrelated tools
+# on a developer's PATH (e.g. Poppler ships an incompatible icuuc.dll).
+if sys.platform == "win32":
+    windows = Path(os.environ["SystemRoot"])
+    os.environ["PATH"] = os.pathsep.join(map(str, [windows / "System32", windows, Path(sys.executable).parent]))
 
 root = Path(SPECPATH)
 data = [(str(root / name), ".") for name in ("README.md", "LICENSE", "THIRD_PARTY_NOTICES.md")]

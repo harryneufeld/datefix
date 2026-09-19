@@ -7,12 +7,14 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
-import time
 
 ROOT = Path(__file__).resolve().parents[1]
 CLI = ROOT / "dist" / "DateFix" / "datefix-cli.exe"
 GUI = CLI.with_name("DateFix.exe")
 ENV = {key: value for key, value in os.environ.items() if key not in {"PYTHONPATH", "DATEFIX_EXIFTOOL"}}
+ENV["PATH"] = os.pathsep.join([str(Path(os.environ["SystemRoot"]) / "System32"), os.environ["SystemRoot"]])
+for name in ("QT_PLUGIN_PATH", "QT_QPA_PLATFORM_PLUGIN_PATH", "QML2_IMPORT_PATH", "PYTHONHOME"):
+    ENV.pop(name, None)
 
 
 def run(*args):
@@ -60,18 +62,19 @@ def main():
         assert run("undo", result["journal_path"], "--json")["files"][0]["status"] == "undone"
         assert hashlib.sha256(photo.read_bytes()).hexdigest() == original_hash
 
-    process = subprocess.Popen([str(GUI)], env={**ENV, "QT_QPA_PLATFORM": "offscreen"},
-                               stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                               creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
-    try:
-        time.sleep(3)
-        assert process.poll() is None, "Portable GUI exited at startup: " + str(process.communicate())
-    finally:
-        if process.poll() is None:
-            process.terminate()
-            process.wait(timeout=10)
+    for platform in ("offscreen", "windows"):
+        with tempfile.TemporaryDirectory(prefix="datefix-startup-", dir=ROOT / "artifacts") as temporary:
+            ready_file = Path(temporary) / "ready.json"
+            result = subprocess.run([str(GUI), "--startup-check-report", str(ready_file)],
+                                    env={**ENV, "QT_QPA_PLATFORM": platform},
+                                    capture_output=True, timeout=30,
+                                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+            readiness = json.loads(ready_file.read_text(encoding="utf-8")) if ready_file.exists() else {}
+            assert result.returncode == 0 and readiness.get("ready") is True, (platform, readiness, result.stderr)
+            assert readiness["platform"] == platform
     report = {"portable_cli": "passed", "filesystem_apply_undo": "passed",
               "bundled_metadata_apply_undo": "passed", "portable_gui_offscreen_startup": "passed",
+              "portable_gui_windows_startup": "passed", "clean_path": True,
               "exiftool": str(engine)}
     (ROOT / "artifacts" / "portable-verification.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(json.dumps(report, indent=2))

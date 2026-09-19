@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
-from PySide6.QtCore import QDateTime, QObject, QThread, Qt, QUrl, Signal, Slot
+from PySide6.QtCore import QDateTime, QObject, QThread, Qt, QUrl, Signal, Slot, QTimer
 from PySide6.QtGui import QColor, QDesktopServices, QDragEnterEvent, QDropEvent, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication, QButtonGroup, QCheckBox, QComboBox, QDateTimeEdit,
@@ -700,14 +700,22 @@ class MainWindow(QMainWindow):
             event.accept()
 
 
-def main() -> int:
+def main(startup_report: Path | None = None) -> int:
     application = QApplication.instance() or QApplication([sys.argv[0]])
     application.setApplicationName("DateFix")
     application.setOrganizationName("DateFix")
     application.setStyle("Fusion")
     application.setStyleSheet(STYLE)
     window = MainWindow()
+    if startup_report is not None:
+        window.setAttribute(Qt.WidgetAttribute.WA_DontShowOnScreen, True)
     window.show()
+    if startup_report is not None:
+        def report_ready():
+            import json
+            startup_report.write_text(json.dumps({"ready": window.isVisible(), "platform": application.platformName()}), encoding="utf-8")
+            application.quit()
+        QTimer.singleShot(0, report_ready)
     return application.exec()
 
 
