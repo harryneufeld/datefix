@@ -46,7 +46,7 @@ if result.journal_path:
     restored = undo(result.journal_path)
 ```
 
-`Request` takes exactly one of `offset` or `fixed`. A fixed value is a Python `datetime`; an aware value identifies an instant, and a naive value uses the selected timezone for filesystem dates. Targets are `modified`, `created` and `captured`. `Offset` contains integer years, days, hours, minutes and seconds; negative values subtract.
+`Request` takes exactly one of `offset` or `fixed`. A fixed value is a Python `datetime`; an aware value identifies an instant, and a naive value uses the selected timezone for filesystem dates. Targets are `modified`, `created` and `captured`. `Offset` contains integer years, months, days, hours, minutes and seconds; negative values subtract. Use `Offset(months=1)` for a calendar month. The new `months` field defaults to zero and is appended to preserve the earlier positional argument order and compatibility with saved plans that omit it.
 
 `preview()` takes explicit file paths. Use `discover()` to expand directories first. A `Plan` contains a `FilePlan` for each discovered path. Each `Change` exposes `field`, `before` and `after` strings for presentation. Capture fields include their metadata group, for example `captured:ExifIFD:DateTimeOriginal`.
 
@@ -56,7 +56,7 @@ if result.journal_path:
 
 ## Dates and platform boundaries
 
-Filesystem timestamps are represented internally as integer nanoseconds. Calendar arithmetic applies years first, clamps leap days when necessary, then adds the remaining components. Shifts retain the original subsecond precision where the filesystem permits it. Local arithmetic checks for invalid daylight-saving wall times; UTC gives timezone-independent arithmetic.
+Filesystem timestamps are represented internally as integer nanoseconds. Calendar arithmetic combines years and months into a total month shift, clamps the day once to the target month's last valid day, then adds days and time. Shifts retain the original subsecond precision where the filesystem permits it. Local arithmetic checks for invalid daylight-saving wall times; UTC gives timezone-independent arithmetic.
 
 Windows creation time is read from the platform's birth-time information and written through `SetFileTime`. Linux modification time is supported through `os.utime`; Linux inode-change time is not exposed as an editable creation date.
 

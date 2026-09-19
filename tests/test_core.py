@@ -33,6 +33,55 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(plan.files[0].operations["modified"], core._to_ns(expected, "UTC") + 123456700)
         self.assertEqual(self.file.stat().st_mtime_ns, self.original_ns)
 
+    def test_calendar_months_clamp_once_and_cross_year_boundaries(self):
+        cases = [
+            (datetime(2024, 1, 31), Offset(months=1), datetime(2024, 2, 29)),
+            (datetime(2023, 1, 31), Offset(months=1), datetime(2023, 2, 28)),
+            (datetime(2024, 3, 31), Offset(months=-1), datetime(2024, 2, 29)),
+            (datetime(2024, 1, 31), Offset(months=14), datetime(2025, 3, 31)),
+            (datetime(2024, 3, 31), Offset(months=-14), datetime(2023, 1, 31)),
+            (datetime(2024, 2, 29), Offset(years=1, months=1), datetime(2025, 3, 29)),
+            (datetime(2024, 2, 29), Offset(years=1, months=-12), datetime(2024, 2, 29)),
+            (datetime(2024, 1, 31, 20), Offset(months=1, days=1, hours=6), datetime(2024, 3, 2, 2)),
+        ]
+        for before, offset, expected in cases:
+            with self.subTest(before=before, offset=offset):
+                self.assertEqual(core._shift(before, offset), expected)
+
+    def test_months_outside_calendar_range_are_rejected(self):
+        for before, months in [(datetime(1, 1, 1), -1), (datetime(9999, 12, 31), 1)]:
+            with self.subTest(before=before, months=months):
+                with self.assertRaises(ValueError):
+                    core._shift(before, Offset(months=months))
+        for months in [1.5, "1", True]:
+            with self.subTest(months=months):
+                with self.assertRaises(ValueError):
+                    Offset(months=months)
+
+    def test_month_offset_apply_undo_preserves_subseconds_and_payload(self):
+        original = self.file.read_bytes()
+        plan = preview([self.file], self.request(months=1))
+        expected = core._to_ns(datetime(2024, 3, 29, tzinfo=timezone.utc), "UTC") + 123456700
+        self.assertEqual(plan.files[0].operations["modified"], expected)
+        self.assertEqual(self.file.stat().st_mtime_ns, self.original_ns)
+        result = apply(plan, self.history)
+        self.assertEqual(result.files[0].status, "applied", result.files[0].message)
+        self.assertEqual(self.file.stat().st_mtime_ns, expected)
+        self.assertEqual(self.file.read_bytes(), original)
+        self.assertEqual(undo(result.journal_path).files[0].status, "undone")
+        self.assertEqual(self.file.stat().st_mtime_ns, self.original_ns)
+        self.assertEqual(self.file.read_bytes(), original)
+
+    def test_month_plan_roundtrip_and_legacy_compatibility(self):
+        plan = preview([self.file], self.request(months=-13, days=2))
+        restored = plan_from_dict(json.loads(json.dumps(plan_to_dict(plan))))
+        self.assertEqual(restored, plan)
+        legacy = preview([self.file], self.request(years=1))
+        payload = plan_to_dict(legacy)
+        del payload["request"]["offset"]["months"]
+        self.assertEqual(plan_from_dict(payload), legacy)
+        self.assertEqual(Offset(2, 16, 6, 4, 3), Offset(years=2, days=16, hours=6, minutes=4, seconds=3))
+
     def test_apply_undo_preserves_payload_and_creation(self):
         original = self.file.read_bytes()
         created = core._created_ns(self.file.stat())

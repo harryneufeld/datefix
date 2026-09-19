@@ -76,14 +76,31 @@ def test_exact_time_uses_selected_timezone(window):
     assert window._request().fixed.tzinfo is None
 
 
+def test_months_accept_negative_values_invalidate_preview_and_reset_with_preset(window, tmp_path):
+    source = tmp_path / "month-preview.avi"
+    source.write_bytes(b"DateFix UI test fixture")
+    window.add_paths([source])
+    window.offset_inputs["months"].setValue(-2)
+    assert window._request().offset.months == -2
+    window._display_plan(core.preview([source], window._request()))
+    assert window.apply_button.isEnabled()
+    window.offset_inputs["months"].setValue(1)
+    assert window.plan is None
+    assert not window.apply_button.isEnabled()
+    window._set_preset()
+    assert window._request().offset == core.Offset(years=2, days=16, hours=6, months=0)
+    assert window.offset_inputs["months"].value() == 0
+
+
 def test_background_preview_apply_and_undo(window, application, monkeypatch, tmp_path):
     source = tmp_path / "clip.avi"
     source.write_bytes(b"DateFix UI test fixture")
-    original_ns = 1700000000123456700
+    original_ns = int(datetime(2024, 1, 31, tzinfo=timezone.utc).timestamp()) * 10**9 + 123456700
     os.utime(source, ns=(original_ns, original_ns))
     actual_original = source.stat().st_mtime_ns
     monkeypatch.setattr(gui, "apply", lambda plan, progress: core.apply(plan, tmp_path / "history", progress))
     window.add_paths([source])
+    window.offset_inputs["months"].setValue(1)
     window.offset_inputs["hours"].setValue(6)
     window.timezone.setCurrentIndex(1)
 
@@ -97,7 +114,8 @@ def test_background_preview_apply_and_undo(window, application, monkeypatch, tmp
 
     window._apply()
     wait_until_idle(window, application)
-    assert source.stat().st_mtime_ns == actual_original + 6 * 3600 * 10**9
+    expected_ns = int(datetime(2024, 2, 29, 6, tzinfo=timezone.utc).timestamp()) * 10**9 + 123456700
+    assert source.stat().st_mtime_ns == expected_ns
     assert window.plan is None
     assert not window.apply_button.isEnabled()
     assert window.undo_button.isEnabled()

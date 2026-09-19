@@ -81,6 +81,9 @@ datefix shift "/path/to/media" --years 2 --days 16 --hours 6 --recursive --apply
 # Subtract six hours.
 datefix shift "clip.avi" --hours -6 --apply
 
+# Add one calendar month (negative values subtract months).
+datefix shift "clip.avi" --months 1
+
 # Preview file-modified and capture dates together.
 datefix shift "photo.jpg" "clip.mp4" --hours 6 --fields modified,captured
 
@@ -105,7 +108,7 @@ Use `--journal-dir "/path/to/history"` on `shift`, `set`, or `history` to choose
 
 ## Calendar and timezone behavior
 
-- Years are calendar years, followed by days, hours, minutes and seconds. February 29 becomes February 28 when the target year is not a leap year. A year is not treated as 365 days.
+- Years and months are calendar offsets, combined first, followed by days, hours, minutes and seconds. If the original day is absent from the target month, its last day is used. January 31 plus one month becomes February 28 (or 29 in a leap year); February 29, 2024 plus one year and one month becomes March 29, 2025. A month is not treated as 30 days or a year as 365 days. Negative values subtract, and values larger than 12 months cross year boundaries.
 - Filesystem dates and QuickTime integer dates use the selected `local` or `UTC` calendar. Local means the timezone configured on the computer. Nonexistent local times during daylight-saving transitions are rejected.
 - QuickTime integer dates are treated as UTC internally. Some cameras write local time into those fields; the preview warns about this assumption.
 - Capture dates with explicit offsets retain their stored offsets. EXIF companion offset tags are taken into account. A fixed instant is converted into the source offset.

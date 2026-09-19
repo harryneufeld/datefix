@@ -20,6 +20,20 @@ class MetadataTests(unittest.TestCase):
         after = _new_capture(before, Request(offset=Offset(years=2, days=16, hours=6)))
         self.assertEqual(after, "2026:03:16 16:20:30.123456789+02:00")
 
+    def test_month_shift_retains_capture_precision_and_timezone(self):
+        before = "2024:01:31 10:20:30.123456789+02:00"
+        after = _new_capture(before, Request(offset=Offset(months=1)))
+        self.assertEqual(after, "2024:02:29 10:20:30.123456789+02:00")
+        after = _new_capture("2024:02:29 10:20:30", Request(offset=Offset(years=1, months=1)))
+        self.assertEqual(after, "2025:03:29 10:20:30")
+
+    def test_quicktime_month_shift_uses_selected_timezone(self):
+        after = _new_capture(
+            "2024:03:31 12:30:00+00:00", Request(offset=Offset(months=-1), timezone="UTC"),
+            "Track1:MediaCreateDate",
+        )
+        self.assertEqual(metadata.parse_date(after), datetime(2024, 2, 29, 12, 30, tzinfo=timezone.utc))
+
     def test_fixed_aware_time_converts_to_existing_offset(self):
         after = _new_capture("2020:01:01 10:00:00+02:00", Request(
             fixed=datetime(2025, 3, 4, 12, tzinfo=timezone.utc)))

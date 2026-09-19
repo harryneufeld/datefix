@@ -36,7 +36,7 @@ def _parser() -> argparse.ArgumentParser:
         action.add_argument("--journal-dir", type=Path, help="Override undo history folder")
         action.add_argument("--json", action="store_true", help="Machine-readable results")
         if verb == "shift":
-            for unit in ("years", "days", "hours", "minutes", "seconds"):
+            for unit in ("years", "months", "days", "hours", "minutes", "seconds"):
                 action.add_argument(f"--{unit}", type=int, default=0, help=f"Signed number of {unit}")
         else:
             action.add_argument("--at", required=True, help="ISO date/time, e.g. 2026-04-21T11:27:50")
@@ -121,7 +121,7 @@ def main(argv: list[str] | None = None) -> int:
             return _print_result(undo(args.journal), args.json)
         fields = tuple(value.strip() for value in args.fields.split(","))
         if args.command == "shift":
-            offset = Offset(**{unit: getattr(args, unit) for unit in ("years", "days", "hours", "minutes", "seconds")})
+            offset = Offset(**{unit: getattr(args, unit) for unit in ("years", "months", "days", "hours", "minutes", "seconds")})
             request = Request(offset=offset, targets=fields, timezone=args.timezone)
         else:
             request = Request(fixed=datetime.fromisoformat(args.at.replace("Z", "+00:00")), targets=fields, timezone=args.timezone)

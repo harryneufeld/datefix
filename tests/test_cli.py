@@ -100,6 +100,28 @@ def test_negative_offsets_apply_as_subtraction(media, tmp_path):
     assert media.stat().st_mtime_ns == original_ns - (6 * 3600 + 17) * 10**9
 
 
+@pytest.mark.parametrize("months, expected", [
+    (1, datetime(2024, 2, 29, 11, tzinfo=timezone.utc)),
+    (-1, datetime(2023, 12, 31, 11, tzinfo=timezone.utc)),
+    (14, datetime(2025, 3, 31, 11, tzinfo=timezone.utc)),
+])
+def test_calendar_month_cli_preview_apply_and_undo(media, tmp_path, months, expected):
+    original_ns = int(datetime(2024, 1, 31, 11, tzinfo=timezone.utc).timestamp()) * 10**9
+    os.utime(media, ns=(original_ns, original_ns))
+    history = tmp_path / "history"
+    arguments = ("shift", media, "--months", months, "--timezone", "UTC", "--journal-dir", history, "--json")
+    previewed = json_output(run_cli(*arguments))
+    assert previewed["files"][0]["changes"][0]["after"] == expected.isoformat(sep=" ")
+    assert media.stat().st_mtime_ns == original_ns
+    assert not history.exists()
+    applied = json_output(run_cli(*arguments, "--apply"))
+    assert applied["files"][0]["status"] == "applied"
+    assert media.stat().st_mtime_ns == int(expected.timestamp()) * 10**9
+    restored = json_output(run_cli("undo", applied["journal_path"], "--json"))
+    assert restored["files"][0]["status"] == "undone"
+    assert media.stat().st_mtime_ns == original_ns
+
+
 @pytest.mark.parametrize("date", ["2026-04-21T11:27:50Z", "2026-04-21T11:27:50"])
 def test_set_accepts_explicit_or_selected_utc(media, tmp_path, date):
     output = json_output(run_cli(

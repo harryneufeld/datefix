@@ -1,8 +1,8 @@
 """GUI-independent timestamp planning, guarded application, and journalled undo.
 
 Filesystem offsets use calendar/wall-clock arithmetic in the selected local or UTC
-timezone. Years are applied first (February 29 clamps to February 28), followed
-by days and time. Nonexistent local times are rejected; an ambiguous local time
+timezone. Years and months are combined, with the day clamped to the target
+month's last day when necessary, followed by days and time. Nonexistent local times are rejected; an ambiguous local time
 retains the source's fold when available. QuickTime integer dates use the same
 timezone arithmetic. String capture tags retain their explicitly stored offsets.
 """
@@ -36,6 +36,8 @@ class Offset:
     hours: int = 0
     minutes: int = 0
     seconds: int = 0
+    # Append to preserve the original positional arguments of the public API.
+    months: int = 0
 
     def __post_init__(self) -> None:
         if any(type(value) is not int for value in asdict(self).values()):
@@ -229,11 +231,13 @@ def _snapshot_after_write(path: Path, atime_ns: int, hash_content: bool) -> dict
 def _shift(value: datetime, offset: Offset) -> datetime:
     if not any(asdict(offset).values()):
         return value
-    year = value.year + offset.years
+    month_index = (value.year - 1) * 12 + value.month - 1 + offset.years * 12 + offset.months
+    year_index, month_index = divmod(month_index, 12)
+    year, month = year_index + 1, month_index + 1
     if not 1 <= year <= 9999:
         raise ValueError("The resulting year must be between 1 and 9999.")
-    day = min(value.day, calendar.monthrange(year, value.month)[1])
-    shifted = value.replace(year=year, day=day) + timedelta(
+    day = min(value.day, calendar.monthrange(year, month)[1])
+    shifted = value.replace(year=year, month=month, day=day) + timedelta(
         days=offset.days, hours=offset.hours, minutes=offset.minutes, seconds=offset.seconds
     )
     return shifted.replace(fold=value.fold)

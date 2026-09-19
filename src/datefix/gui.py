@@ -225,8 +225,8 @@ class MainWindow(QMainWindow):
         grid.setHorizontalSpacing(8)
         grid.setVerticalSpacing(4)
         self.offset_inputs: dict[str, QSpinBox] = {}
-        for index, name in enumerate(("years", "days", "hours", "minutes", "seconds")):
-            row, col = (0, index) if index < 2 else (2, index - 2)
+        for index, name in enumerate(("years", "months", "days", "hours", "minutes", "seconds")):
+            row, col = (index // 3) * 2, index % 3
             label = _label(name.capitalize())
             spin = QSpinBox()
             spin.setRange(-9999, 9999)
@@ -263,7 +263,7 @@ class MainWindow(QMainWindow):
         self.timezone.addItem("UTC", "UTC")
         self.timezone.currentIndexChanged.connect(self._invalidate_plan)
         layout.addWidget(self.timezone)
-        layout.addWidget(_label("Calendar years first, then days and time.\nFebruary 29 becomes February 28 if needed.", wrap=True))
+        layout.addWidget(_label("Calendar years and months, then days and time.\nDates clamp to the last day of the target month.", wrap=True))
         divider = QFrame()
         divider.setFrameShape(QFrame.Shape.HLine)
         divider.setStyleSheet("color: #e2e9e1;")
@@ -686,7 +686,7 @@ class MainWindow(QMainWindow):
     def _show_help(self) -> None:
         QMessageBox.information(self, "How DateFix handles dates", (
             "File modified and File created are filesystem dates. Embedded capture dates are metadata inside a photo or video; galleries often sort by these.\n\n"
-            "The same shift is applied to each existing date. Years are calendar years and are applied before days, hours, minutes and seconds. February 29 is clamped to February 28 when needed.\n\n"
+            "The same shift is applied to each existing date. Calendar years and months are combined first, then days, hours, minutes and seconds are added. If the day does not exist in the target month, its last day is used: January 31 plus one month becomes February 28 (or 29 in a leap year).\n\n"
             "Local time uses this computer's time zone; UTC uses universal time. Capture tags without time-zone information are treated as wall-clock dates. Preview the results, especially around daylight-saving changes.\n\n"
             "ExifTool is required for embedded metadata. Support depends on the format and tags already present. A file with an unsupported selected field is skipped; review its status for details.\n\n"
             "An undo journal is saved locally when you apply changes. Keep it to restore original dates. Undo checks for later changes and may refuse to overwrite a changed file."
