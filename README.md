@@ -2,6 +2,9 @@
 
 DateFix adjusts file dates and existing photo/video capture dates. Its Python core and command-line interface are independent of the optional desktop interface, so the same operations can run on Windows and Linux. Everything runs locally.
 
+<img width="1889" height="1426" alt="image" src="https://github.com/user-attachments/assets/6dfe71fc-256a-4e6e-814a-ac838b5d8e63" />
+
+
 ## Start on Windows
 
 Double-click **Start DateFix.cmd** in this project folder. The portable desktop application is also available at `dist\DateFix\DateFix.exe`; its command-line companion is `dist\DateFix\datefix-cli.exe`.
